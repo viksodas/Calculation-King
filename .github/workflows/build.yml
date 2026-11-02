@@ -1,27 +1,54 @@
+
 name: Build Calculation King APK
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Download repository
+        uses: actions/checkout@v4
 
-      - name: Extract project
-        run: unzip -o Calculation-King-Project.zip -d .
-
-      - uses: subosito/flutter-action@v2
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      - run: flutter pub get
-      - run: flutter build apk --release
+      - name: Extract app project
+        run: |
+          ZIP_FILE=$(find . -maxdepth 2 -type f -iname "*.zip" | head -n 1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "Project ZIP was not found."
+            find . -maxdepth 3 -type f
+            exit 1
+          fi
+          mkdir -p app
+          unzip -o "$ZIP_FILE" -d app
 
-      - uses: actions/upload-artifact@v4
+      - name: Generate Android project files
+        run: |
+          cd app
+          flutter create --platforms=android --project-name calculation_king .
+
+      - name: Install dependencies
+        run: |
+          cd app
+          flutter pub get
+
+      - name: Build APK
+        run: |
+          cd app
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk "$GITHUB_WORKSPACE/Calculation-King.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: Calculation-King-APK
-          path: build/app/outputs/flutter-apk/app-release.apk  
+          path: Calculation-King.apk
