@@ -1,0 +1,27 @@
+name: Build Calculation King APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract project
+        run: unzip -o calculation-king-android-project.zip -d .
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+      - run: flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Calculation-King-APK
+          path: build/app/outputs/flutter-apk/app-release.apk  
